@@ -1,0 +1,458 @@
+quiero conectar el servidor con VUE.js y que al subir archivo .txt y .pdf y apretar el boton "cargar a la biblioteca" en el VUE se suban al servidor dicho archivo:
+
+
+
+Al momento de subir el archivo en VUE aparece en la consola del servidor "Archivo subido: undefined" y no se sube el archivo a la carpeta uploadallo pero en teoria si aparece archivo subido es porque esta funcionando correctamente
+
+ considerar que en http://localhost:9000 se ejecuta el VUE y en http://localhost:3000 el servidor
+
+server27
+|-- app
+|   |-- routes
+|       |-- index.js  
+|       |-- uploadallo.js
+|   |-- controllers
+|       |-- uploadallo.js
+|-- servidorallo.js
+|-- uploadsallo   -> aqui se guardan los archivos
+
+controllers/uploadallo :
+
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploadsallo');
+    },
+    filename: function (req, file, cb) {
+        cb(null, `${Date.now()}-${file.originalname}`);
+    }
+});
+
+const upload = multer({ storage: storage });
+
+exports.upload = upload.single('myFile');
+
+exports.uploadFile = (req, res) => {
+    try {
+        // Lógica para manejar el archivo subido
+        console.log('Archivo subido:', req.file);
+        res.send('Archivo subido exitosamente');
+    } catch (error) {
+        console.error('Error al manejar el archivo:', error);
+        res.status(500).send('Error al manejar el archivo');
+    }
+};
+
+exports.getUploadedFiles = (req, res) => {
+    try {
+        // Obtener la lista de archivos en la carpeta 'uploadsallo'
+        const files = fs.readdirSync('uploadsallo');
+        console.log('Archivos subidos:', files);
+        res.json({ files });
+    } catch (error) {
+        console.error('Error al obtener archivos subidos:', error);
+        res.status(500).send('Error al obtener archivos subidos');
+    }
+};
+
+
+
+
+
+const upload = multer({ storage: storage });
+
+exports.upload = upload.single('myFile');
+
+exports.uploadFile = (req, res) => {
+    try {
+        // Lógica para manejar el archivo subido
+        console.log('Archivo subido:', req.file);
+        res.send('Archivo subido exitosamente');
+    } catch (error) {
+        console.error('Error al manejar el archivo:', error);
+        res.status(500).send('Error al manejar el archivo');
+    }
+};
+
+exports.getUploadedFiles = (req, res) => {
+    try {
+        // Obtener la lista de archivos en la carpeta 'uploadsallo'
+        const files = fs.readdirSync('uploadsallo');
+        console.log('Archivos subidos:', files);
+        res.json({ files });
+    } catch (error) {
+        console.error('Error al obtener archivos subidos:', error);
+        res.status(500).send('Error al obtener archivos subidos');
+    }
+};
+
+
+routes/uploadallo : 
+
+// app/routes/uploadallo.js
+const express = require('express');
+const router = express.Router();
+const controller = require('../controllers/uploadallo');
+
+// Ruta POST para subir archivos
+router.post('/', controller.upload, controller.uploadFile);
+
+// Ruta GET para obtener la lista de archivos subidos
+router.get('/', controller.getUploadedFiles);
+
+module.exports = router;
+
+
+
+routes/index :
+ 
+const express = require('express');
+const router = express.Router();
+
+const uploadalloRoutes = require('./uploadallo');
+
+router.use('/uploadallo', uploadalloRoutes);
+
+module.exports = router;
+
+
+
+
+
+
+servidorallo :
+
+const express = require('express');
+const cors = require('cors');
+const app = express();
+const port = 3000;
+const routes = require('./app/routes');
+
+app.use(cors()); // Habilita CORS
+app.use(routes); // Configura las rutas como middleware
+app.use('/uploads', express.static('uploadsallo'));
+app.get('/', (req, res) => {
+  res.send('Hola Mundo');
+});
+
+
+app.listen(port, () => {
+  console.log(`Servidor Express escuchando en http://localhost:${port}`);
+});
+
+
+
+
+
+VUE.js pantalla de carga de documentos:
+
+
+
+<template>
+  <div>
+    <v-container>
+      <!-- Imagen en la esquina superior derecha -->
+      <v-row>
+        <v-col cols="6">
+          <v-subheader class="font-weight-bold display-1" style="text-align: left;">Carga de Textos</v-subheader>
+        </v-col>
+        <v-col class="d-flex justify-end align-start" cols="6">
+          <img src="@/assets/Alloxentric-logo-full-color.png" width="190" height="45" />
+        </v-col>
+      </v-row>
+      <hr>
+
+      <v-row>
+        <v-col cols="12" class="d-flex justify-end align-start">
+          <v-btn color="#51CDC9" dark>
+            Crear nuevo script
+          </v-btn>
+        </v-col>
+      </v-row>
+      <!-- Sección de pestañas -->
+      <v-row>
+        <v-col cols="12">
+          <v-tabs v-model="selectedTab">
+            <v-tab>Carga de Textos</v-tab>
+            <v-tab>Carga de muchos Textos</v-tab>
+          </v-tabs>
+        </v-col>
+      </v-row>
+
+      <!-- Contenido de la primera pestaña (Carga de Textos) -->
+      <v-row v-if="selectedTab === 0">
+        <v-col cols="12">
+          <v-text-field v-model="filterName01" :label="filterNameLabelss">
+            <template v-slot:append>
+              <v-file-input v-model="fileInput1" truncate-length="15"></v-file-input>
+            </template>
+          </v-text-field>
+          <!-- Otros campos o contenido específico para la pestaña de carga de textos 1 -->
+        </v-col>
+        <!-- Nueva sección de carga de textos para la pestaña de carga de textos 1 -->
+        <v-col cols="12">
+          <v-text-field v-model="filterName02" :label="filterNameLabelss">
+            <template v-slot:append>
+              <v-file-input v-model="fileInput2" multiple truncate-length="15"></v-file-input>
+            </template>
+          </v-text-field>
+          <!-- Otros campos o contenido específico para la nueva sección de carga de textos 1 -->
+        </v-col>
+      </v-row>
+
+      <!-- Contenido de la segunda pestaña (Carga de muchos Textos) -->
+      <v-row v-if="selectedTab === 1">
+        <v-col cols="12">
+          <v-text-field v-model="filterName03" :label="filterNameLabelss">
+            <template v-slot:append>
+              <v-file-input v-model="fileInput3" truncate-length="15"></v-file-input>
+            </template>
+          </v-text-field>
+          <!-- Otros campos o contenido específico para la pestaña de carga de muchos textos 2 -->
+        </v-col>
+        <!-- Nueva sección de carga de textos para la pestaña de carga de muchos textos 2 -->
+        <v-col cols="12">
+          <v-text-field v-model="filterName04" :label="filterNameLabelss">
+            <template v-slot:append>
+              <v-file-input v-model="fileInput4" multiple truncate-length="15"></v-file-input>
+            </template>
+          </v-text-field>
+          <!-- Otros campos o contenido específico para la nueva sección de carga de textos 2 -->
+        </v-col>
+      </v-row>
+
+      <!-- Ventana emergente para filtros -->
+      <v-dialog v-model="filterDialog" max-width="600px">
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn color="#51CDC9" dark v-bind="attrs" v-on="on">
+            {{ filterBtn }}
+          </v-btn>
+        </template>
+        <v-card>
+          <v-card-title>
+            {{ filterTitle }}
+          </v-card-title>
+          <v-card-text>
+            <!-- Contenido de los filtros -->
+            <v-container>
+              <v-row>
+                <v-col cols="12">
+                  <v-text-field v-model="filterName1" :label="filterNameLabel"></v-text-field>
+                </v-col>
+                <v-col cols="12">
+                  <v-text-field v-model="filterNumber1" :label="filterNumberLabels"></v-text-field>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col cols="12">
+                  <v-text-field v-model="filterName2" :label="filterNameLabele"></v-text-field>
+                </v-col>
+                <v-col cols="12">
+                  <v-text-field v-model="filterNumber2" :label="filterNumberLabel"></v-text-field>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="#51CDC9" text @click="applyFilters">
+              {{ applyFiltersBtn }}
+            </v-btn>
+            <v-btn color="#51CDC9" text @click="clearFilters">
+              {{ clearFiltersBtn }}
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <v-autocomplete cols="6"
+        label="Seleccione el script para evaluar texto"
+        :items="[]"
+        variant="underlined"
+      ></v-autocomplete>
+
+      <!-- Ventana emergente para subir archivos -->
+      <v-dialog v-model="fileUploadDialog" max-width="600px">
+        <v-card>
+          <v-card-title>
+            Subir Archivo
+          </v-card-title>
+          <v-card-text>
+            <v-container>
+              <v-row>
+                <v-col cols="12">
+                  <input type="file" @change="handleFileUpload" accept=".txt, .pdf">
+                </v-col>
+              </v-row>
+              <v-row v-if="previewUrl">
+                <v-col cols="12">
+                  <img v-if="isImage" :src="previewUrl" alt="Preview" style="max-width: 100%; max-height: 200px;">
+                  <v-divider v-else></v-divider>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="#51CDC9" text @click="uploadFile">
+              Subir
+            </v-btn>
+            <v-btn color="#51CDC9" text @click="deleteFile">
+              Cancelar
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <v-row>
+        <v-col cols="12" class="d-flex justify-center align-center">
+          <v-btn color="#51CDC9" dark @click="addToLibrary">
+            Cargar a la biblioteca
+          </v-btn>
+        </v-col>
+      </v-row>
+    </v-container>
+  </div>
+</template>
+
+<script lang="ts">
+import { Vue, Component } from 'vue-property-decorator';
+import axios from 'axios';
+
+@Component({
+  name: 'MyComponent'
+})
+export default class MyComponent extends Vue {
+  public selectedTab = 0;
+  public filterName01 = this.$t('Seleccione el archivo de texto');
+  public filterName02 = this.$t('Seleccione el metadato de texto');
+  public filterName03 = this.$t('Seleccione el archivo de comprimido de todos los textos');
+  public filterName04 = this.$t('Seleccione el archivo de metadata');
+  public fileInput1 = null;
+  public fileInput2 = null;
+  public fileInput3 = null;
+  public fileInput4 = null;
+  public filterDialog = false;
+  public filterName = '';
+  public filterNumber = '';
+  public filterBtn = this.$t('Agregar Metadata Manualmente');
+  public filterTitle = this.$t('Filtros');
+  public filterNameLabele = this.$t('Fecha');
+  public filterNumberLabel = this.$t('Idioma');
+  public applyFiltersBtn = this.$t('Aplicar Filtros');
+  public clearFiltersBtn = this.$t('Cancelar Filtros');
+  public filterNameLabel = this.$t('Categoria');
+  public filterNumberLabels = this.$t('Empresa');
+  public btnClose = this.$t("dataTable.btnClose");
+  public filterNameLabelss = this.$t('Seleccione el archivo de texto');
+  public filterNumberLabelss = this.$t('Seleccione el metadata de texto');
+  public dialogUpdate = false;
+  public fileUploadDialog = false;
+  public selectedFile: File | null = null;
+  public previewUrl: string | null = null;
+  public isImage = false;
+
+  public openFilterDialog() {
+    this.filterDialog = true;
+  }
+
+  public applyFilters() {
+    this.filterDialog = false;
+  }
+
+  public clearFilters() {
+    this.filterName = '';
+    this.filterNumber = '';
+    this.filterDialog = false;
+  }
+
+  public openFileUploadDialog() {
+    this.fileUploadDialog = true;
+  }
+
+  public handleFileUpload(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (input.files) {
+    this.selectedFile = input.files[0];
+    console.log('Selected File:', this.selectedFile);
+    this.previewFile();
+  }
+}
+
+
+  public previewFile() {
+    if (this.selectedFile) {
+      const reader = new FileReader();
+
+      reader.onloadend = () => {
+        this.previewUrl = reader.result as string;
+        this.isImage = this.selectedFile!.type.startsWith('image');
+      };
+      reader.readAsDataURL(this.selectedFile);
+    } else {
+      this.previewUrl = null;
+    }
+    console.log('Preview File:', this.selectedFile);
+  }
+
+  public uploadFile() {
+  if (!this.selectedFile) {
+    console.error('No se ha seleccionado ningún archivo.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('myFile', this.selectedFile);
+
+  console.log('Uploading File:', this.selectedFile);
+
+  axios.post('http://localhost:3000/uploadallo', formData)
+    .then(response => {
+      console.log('Respuesta de carga:', response.data);
+      this.getUploadedFiles();
+    })
+    .catch(error => {
+      console.error('Error al cargar el archivo:', error);
+    });
+
+  this.fileUploadDialog = false;
+}
+
+
+
+
+  public deleteFile() {
+    this.selectedFile = null;
+    this.previewUrl = null;
+  }
+
+  public addToLibrary() {
+    axios.post('http://localhost:3000/uploadallo', { filterName: this.filterName, filterNumber: this.filterNumber })
+      .then(response => {
+        console.log('Respuesta de la API:', response.data);
+      })
+      .catch(error => {
+        console.error('Error al cargar a la biblioteca:', error);
+      });
+  }
+
+  
+
+  async getUploadedFiles() {
+    try {
+      const response = await axios.get('/api/get-uploaded-files');
+      const files = response.data.files;
+      console.log('Archivos subidos:', files);
+    } catch (error) {
+      console.error('Error al obtener archivos subidos:', error);
+    }
+  }
+
+  mounted() {
+    this.getUploadedFiles();
+  }
+}
+</script>
